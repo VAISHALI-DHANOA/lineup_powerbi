@@ -7,6 +7,16 @@
     "name": "Samuel Gratzl",
     "email": "sam@sgratzl.com"
   },
+  "contributors": [{
+      "name": "Vaishali Dhanoa"
+    },
+    {
+      "name": "Conny Walchshofer"
+    },
+    {
+      "name": "Holger Stitz"
+    }
+  ],
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/lineupjs/lineup_powerbi/issues"
