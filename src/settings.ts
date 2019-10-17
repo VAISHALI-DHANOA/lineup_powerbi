@@ -24,33 +24,33 @@
  *  THE SOFTWARE.
  */
 
-module powerbi.extensibility.visual {
-  import DataViewObjectsParser = powerbi.extensibility.utils.dataview.DataViewObjectsParser;
+"use strict";
 
-  export class LineUpVisualSettings extends DataViewObjectsParser {
-    readonly lineup = new LineUpSettings();
-    readonly provider = new LineUpProviderSettings();
-  }
+import { dataViewObjectsParser } from "powerbi-visuals-utils-dataviewutils";
+import DataViewObjectsParser = dataViewObjectsParser.DataViewObjectsParser;
 
-  export class LineUpProviderSettings {
-    filterGlobally: boolean;
-    maxNestedSortingCriteria: number;
-    maxGroupColumns: number;
-    multiSelection: boolean;
-  }
+export class LineUpVisualSettings extends DataViewObjectsParser {
+  readonly lineup = new LineUpSettings();
+  readonly provider = new LineUpProviderSettings();
+}
 
-  export class LineUpSettings {
-    overviewMode: boolean;
-    summaryHeader: boolean;
-    animated: boolean;
-    expandLineOnHover: boolean;
-    sidePanel: boolean;
-    sidePanelCollapsed: boolean;
-    defaultSlopeGraphMode: 'item' | 'band';
-    rowHeight: number;
-    rowPadding: number;
-    groupHeight: number;
-    groupPadding: number;
-  }
+export class LineUpProviderSettings {
+  filterGlobally: boolean;
+  maxNestedSortingCriteria: number;
+  maxGroupColumns: number;
+  multiSelection: boolean;
+}
 
+export class LineUpSettings {
+  overviewMode: boolean;
+  summaryHeader: boolean;
+  animated: boolean;
+  expandLineOnHover: boolean;
+  sidePanel: boolean;
+  sidePanelCollapsed: boolean;
+  defaultSlopeGraphMode: 'item' | 'band';
+  rowHeight: number;
+  rowPadding: number;
+  groupHeight: number;
+  groupPadding: number;
 }

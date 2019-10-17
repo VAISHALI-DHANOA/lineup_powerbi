@@ -1,28 +1,25 @@
 {
-  "visual": {
-    "name": "lineup_powerbi",
-    "displayName": "lineup_powerbi",
-    "guid": "lineuppowerbiE314DAA0C5D64CB288D237BF5C4CA3CD",
-    "visualClassName": "LineUpVisual",
-    "version": "1.0.0",
-    "description": "LineUp is an interactive technique designed to create, visualize and explore rankings of items based on a set of heterogeneous attributes.",
-    "supportUrl": "https://github.com/lineupjs/lineup_powerbi/issues",
-    "gitHubUrl": "https://github.com/lineupjs/lineup_powerbi"
-  },
-  "apiVersion": "1.10.0",
-  "author": {
-    "name": "Samuel Gratzl",
-    "email": "sam@sgratzl.com"
-  },
-  "assets": {
-    "icon": "assets/icon.png"
-  },
-  "externalJS": [
-    "node_modules/powerbi-visuals-utils-dataviewutils/lib/index.js",
-    "node_modules/lineupjs/build/LineUpJS.js"
-  ],
-  "style": "style/style.less",
-  "capabilities": "capabilities.json",
-  "dependencies": "dependencies.json",
-  "stringResources": []
+    "visual": {
+        "name": "lineUpPowerBIVC",
+        "displayName": "LineUpPowerBI_VC",
+        "guid": "lineUpPowerBIVC4DDCD3481EE14C2DABC2319628F1C622",
+        "visualClassName": "Visual",
+        "version": "1.0.0",
+        "description": "",
+        "supportUrl": "",
+        "gitHubUrl": ""
+    },
+    "apiVersion": "2.6.0",
+    "author": {
+        "name": "",
+        "email": ""
+    },
+    "assets": {
+        "icon": "assets/icon.png"
+    },
+    "externalJS": null,
+    "style": "style/visual.less",
+    "capabilities": "capabilities.json",
+    "dependencies": null,
+    "stringResources": []
 }
