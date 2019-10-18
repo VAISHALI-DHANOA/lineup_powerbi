@@ -38,8 +38,10 @@ import DataView = powerbi.DataView;
 import DataViewTable = powerbi.DataViewTable;
 import SortDirection = powerbi.SortDirection;
 import VisualObjectInstanceEnumerationObject = powerbi.VisualObjectInstanceEnumerationObject;
-import {LineUpVisualSettings} from "./settings";
-import  * from 'lineupjs';
+import { LineUpVisualSettings } from "./settings";
+import { LocalDataProvider } from 'lineupjs';
+import { LineUp } from 'lineupjs';
+
 export class Visual implements IVisual {
     private readonly target: HTMLElement;
     private readonly colorPalette: IColorPalette;
@@ -47,13 +49,8 @@ export class Visual implements IVisual {
     private provider: any;
     private lineup: any;
     private settings = new LineUpVisualSettings();
-    private lineupLib: any;
 
     constructor(options: VisualConstructorOptions) {
-        this.lineupLib = (<any>window).LineUpJS;
-        debugger;
-        //options.host.createSelectionManager().
-        console.log('Visual constructor', options);
         this.colorPalette = options.host.colorPalette;
         this.target = options.element;
         this.target.innerHTML = '<div></div>';
@@ -63,10 +60,11 @@ export class Visual implements IVisual {
         const oldSettings = this.settings;
         this.settings = Visual.parseSettings(options && options.dataViews && options.dataViews[0]);
         let providerChanged = false;
-        const {rows, cols} = this.extract(options.dataViews[0].table!);
+
+        const { rows, cols } = this.extract(options.dataViews[0].table!);
 
         if (!this.provider || !Visual.equalObject(oldSettings.provider, this.settings.provider)) {
-            this.provider = new this.lineupLib.LocalDataProvider(rows, cols, this.settings.provider);
+            this.provider = new LocalDataProvider(rows, cols, this.settings.provider);
             this.provider.deriveDefault();
             providerChanged = true;
         } else if (Visual.dataChanged(rows, cols, this.provider.data, this.provider.getColumns())) {
@@ -79,7 +77,8 @@ export class Visual implements IVisual {
             if (this.lineup) {
                 this.lineup.destroy();
             }
-            this.lineup = new this.lineupLib.LineUp(this.target.firstElementChild!, this.provider, this.settings.lineup);
+            this.lineup = new LineUp(<HTMLElement>this.target.firstElementChild!, this.provider, this.settings.lineup);
+
         } else if (providerChanged) {
             this.lineup.setDataProvider(this.provider);
         } else {
@@ -90,6 +89,7 @@ export class Visual implements IVisual {
     private extract(table: DataViewTable) {
         const rows = table.rows || [];
         const colors = this.colorPalette;
+
         const cols = table.columns.map((d) => {
             const c: any = {
                 type: 'string',
@@ -102,6 +102,7 @@ export class Visual implements IVisual {
                 c.type = 'boolean';
             } else if (d.type.integer || d.type.numeric) {
                 c.type = 'number';
+                c.colorMapping = colors.getColor(c.column).value;
                 const vs = rows.map((r) => <number>r[d.index!]);
                 c.domain = [Math.min(...vs), Math.max(...vs)];
             } else if (d.type.dateTime) {
@@ -111,19 +112,16 @@ export class Visual implements IVisual {
                 c.categories = d.type.enumeration.members().map((cat) => {
                     return {
                         label: cat.displayName,
-                        name: cat.value,
-                        color: colors.getColor(String(cat.value))
+                        name: cat.value
                     };
                 });
             }
             return c;
         });
 
-        const sort = table.columns.filter((d) => d.sort).sort((a, b) => a.sortOrder! - b.sortOrder!).map((d) => ({asc: d.sort === SortDirection.Ascending, label: d.displayName}));
+        const sort = table.columns.filter((d) => d.sort).sort((a, b) => a.sortOrder! - b.sortOrder!).map((d) => ({ asc: d.sort === SortDirection.Ascending, label: d.displayName }));
 
-
-        this.lineupLib.deriveColors(cols);
-        return {rows, cols, sort};
+        return { rows, cols, sort };
     }
 
     private static dataChanged(rows: any[], cols: any[], oldRows: any[], oldCols: any[]) {

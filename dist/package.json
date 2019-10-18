@@ -1,0 +1,17 @@
+{
+    "version": "1.0.0",
+    "author": {"name":"Sam, Holger, Conny, and Vaishali","email":"vaishali.dhanoa@gmail.com"},
+    "resources": [
+        {
+            "resourceId": "rId0",
+            "sourceType": 5,
+            "file": "resources/lineUpPowerBIVC4DDCD3481EE14C2DABC2319628F1C622.pbiviz.json"
+        }
+    ],
+    "visual": {"name":"lineUpPowerBIVC","displayName":"LineUpPowerBI_VC","guid":"lineUpPowerBIVC4DDCD3481EE14C2DABC2319628F1C622","visualClassName":"Visual","version":"1.0.0","description":"LineUp is an interactive technique designed to create, visualize and explore rankings of items based on a set of heterogeneous attributes","supportUrl":"https://github.com/lineupjs/lineup_powerbi","gitHubUrl":""},
+    "metadata": {
+        "pbivizjson": {
+            "resourceId": "rId0"
+        }
+    }  
+}

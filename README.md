@@ -32,9 +32,10 @@ Authors
 -------
 
  * Samuel Gratzl (@sgratzl)
+ * Holger Stitz (@thinkh)
  * Vaishali Dhanoa (@VAISHALI-DHANOA)
  * Conny Walchshofer (@ConnyWalchshofer)
- * Holger Stitz (@thinkh)
+
 
 [mit-image]: https://img.shields.io/badge/License-MIT-yellow.svg
 [mit-url]: https://opensource.org/licenses/MIT
