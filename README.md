@@ -1,11 +1,11 @@
- # LineUp.js as PowerBI Visual
+ #LineUp.js as PowerBI Visual
 
 
 [![License: MIT][mit-image]][mit-url]
 
 LineUp is an interactive technique designed to create, visualize and explore rankings of items based on a set of heterogeneous attributes. This is a [PowerBI Custom Visual](https://github.com/Microsoft/PowerBI-Visuals) wrapper around the JavaScript library [LineUp.js](https://github.com/lineupjs/lineupjs). Details about the LineUp visualization technique can be found at [http://lineup.caleydo.org](http://lineup.caleydo.org).
 
-## Develop Power BI custom visual
+##Develop Power BI custom visual
 
 Custom visuals are visualizations that are not provided by the [Microsoft Marketplace](https://appsource.microsoft.com/en-us/marketplace/apps?product=power-bi-visuals "Microsoft Marketplace") per se. In order to adapt visualizations to your wishes and to achieve a customized reporting system, you can therefore develop your own visualizations.
 
