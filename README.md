@@ -1,17 +1,20 @@
- # LineUp.js as PowerBI Visual
+ LineUp.js as PowerBI Visual
+ ===========================
 
 
 [![License: MIT][mit-image]][mit-url]
 
 LineUp is an interactive technique designed to create, visualize and explore rankings of items based on a set of heterogeneous attributes. This is a [PowerBI Custom Visual](https://github.com/Microsoft/PowerBI-Visuals) wrapper around the JavaScript library [LineUp.js](https://github.com/lineupjs/lineupjs). Details about the LineUp visualization technique can be found at [http://lineup.caleydo.org](http://lineup.caleydo.org).
 
-## Develop Power BI custom visual
+Develop Power BI custom visual
+------------------------------
 
 Custom visuals are visualizations that are not provided by the [Microsoft Marketplace](https://appsource.microsoft.com/en-us/marketplace/apps?product=power-bi-visuals "Microsoft Marketplace") per se. In order to adapt visualizations to your wishes and to achieve a customized reporting system, you can therefore develop your own visualizations.
 
 To learn how to create Power BI Visuals, we refer to the following link: https://microsoft.github.io/PowerBI-visuals/docs/overview/
 
-##Dependencies
+Dependencies
+------------
 Before running command line tools, you must install NodeJS or check that node is installed. **Note**: NodeJS 5.++ is required - [Download NodeJS](https://nodejs.org/en/ "Download NodeJS")
 
 `node --version`
@@ -24,7 +27,8 @@ To install [Power BI Visuals util dataviewutils](https://github.com/microsoft/po
 `npm install powerbi-visuals-utils-dataviewutils --save`
 
 
-##Development Environment
+Development Environment
+-----------------------
 
 To install the command line tools, use the following command
 `npm install -g powerbi-visuals-tools`
@@ -47,7 +51,8 @@ Then you need to download all dependencies listed in the _package.json_ file usi
 
 `npm  install`
 
-## Testing visual in Power BI
+Testing visual in Power BI
+---------------------------
 **Enable Live Preview**
 You can test your visual live in reports and dashboards in the PowerBI service using the live developer visual, once it is enabled. To [enable live preview](https://github.com/microsoft/PowerBI-visuals/blob/master/tools/DebugVisualSetup.md "enable live preview") of your custom visual follow these steps
 
@@ -68,11 +73,13 @@ For the import of the custom visual to Microsoft Power BI, select the ellipses f
 
 **Note**: An old version of LineUp is already available in the certified Microsoft Marketplace and is named [Table Sorter](https://appsource.microsoft.com/en-us/product/power-bi-visuals/WA104380796?tab=Overview "Table Sorter"). Further, it is available on [Github](https://github.com/microsoft/PowerBI-visuals-TableSorter?tab=Overview "Table Sorter").
 
-##Examples
+Examples
+--------
 **Supply Quality Analysis**
 Once imported, the LineUp Power BI visual can be used to display and rank your data. Click on the link to see a published report on Power BI using the sample data set 'Supply Quality Analysis' and LineUp: https://app.powerbi.com/view?r=eyJrIjoiMWYzNWE1Y2YtMGE2OS00ZDEyLWE2YzQtYmY3Y2QzYjk4ZWZjIiwidCI6ImE2OWI4YzBkLWViMTgtNDI4MC04MDRhLWFhYmQ1MmYyNzFjNiIsImMiOjh9
 
-##Link Collection
+Link Collection
+---------------
 - **LineUp.js: Visual Analysis of Multi-Attribute Rankings:** https://github.com/lineupjs/lineupjs
 - **Power BI Visuals:** https://microsoft.github.io/PowerBI-visuals/docs/overview/
 - **Power BI Marketplpace:** https://appsource.microsoft.com/en-us/marketplace/apps?product=power-bi-visuals
@@ -83,7 +90,8 @@ Once imported, the LineUp Power BI visual can be used to display and rank your d
 - **Example of another custom visual (Circle Card):** https://github.com/Microsoft/PowerBI-visuals-circlecard
 
 
-##Authors
+Authors
+---------
 
  * Samuel Gratzl (@sgratzl)
  * Holger Stitz (@thinkh)
