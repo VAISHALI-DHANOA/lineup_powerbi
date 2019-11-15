@@ -41,6 +41,7 @@ import VisualObjectInstanceEnumerationObject = powerbi.VisualObjectInstanceEnume
 import { LineUpVisualSettings } from "./settings";
 import { LocalDataProvider } from 'lineupjs';
 import { LineUp } from 'lineupjs';
+import { thresholdFreedmanDiaconis } from "d3";
 
 export class Visual implements IVisual {
     private readonly target: HTMLElement;
@@ -59,31 +60,51 @@ export class Visual implements IVisual {
     update(options: VisualUpdateOptions) {
         const oldSettings = this.settings;
         this.settings = Visual.parseSettings(options && options.dataViews && options.dataViews[0]);
+
         let providerChanged = false;
 
         const { rows, cols } = this.extract(options.dataViews[0].table!);
+        const { oldRows, oldCols } = this.getOldData();
+
+        const hasDataChanged = !(rows === oldRows && cols === oldCols);
 
         if (!this.provider || !Visual.equalObject(oldSettings.provider, this.settings.provider)) {
             this.provider = new LocalDataProvider(rows, cols, this.settings.provider);
             this.provider.deriveDefault();
             providerChanged = true;
-        } else if (Visual.dataChanged(rows, cols, this.provider.data, this.provider.getColumns())) {
+
+        } else if (hasDataChanged) {
             this.provider.clearColumns();
             cols.forEach((c: any) => this.provider.pushDesc(c));
             this.provider.setData(rows);
             this.provider.deriveDefault();
+
         }
+
         if (!this.lineup || !Visual.equalObject(oldSettings.lineup, this.settings.lineup)) {
             if (this.lineup) {
                 this.lineup.destroy();
             }
+
             this.lineup = new LineUp(<HTMLElement>this.target.firstElementChild!, this.provider, this.settings.lineup);
 
         } else if (providerChanged) {
             this.lineup.setDataProvider(this.provider);
+
         } else {
             this.lineup.update();
         }
+    }
+
+    private getOldData() {
+        let rows = null;
+        let cols = null;
+
+        if (this.provider != null) {
+            rows = this.provider.data;
+            cols = this.provider.getColumns();
+        }
+        return { oldRows: rows, oldCols: cols };
     }
 
     private extract(table: DataViewTable) {
@@ -123,11 +144,6 @@ export class Visual implements IVisual {
 
         return { rows, cols, sort };
     }
-
-    private static dataChanged(rows: any[], cols: any[], oldRows: any[], oldCols: any[]) {
-        return rows === oldRows && cols === oldCols;
-    }
-
     private static equalObject(a: any, b: any) {
         if (a === b) {
             return true;
