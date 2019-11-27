@@ -49,12 +49,14 @@ export class Visual implements IVisual {
 
     private provider: any;
     private lineup: any;
-    private settings = new LineUpVisualSettings();
+    private settings: LineUpVisualSettings;
+    private colorIndex = 0;
 
     constructor(options: VisualConstructorOptions) {
         this.colorPalette = options.host.colorPalette;
         this.target = options.element;
         this.target.innerHTML = '<div></div>';
+        this.settings = new LineUpVisualSettings();
     }
 
     update(options: VisualUpdateOptions) {
@@ -68,20 +70,18 @@ export class Visual implements IVisual {
 
         const hasDataChanged = !(rows === oldRows && cols === oldCols);
 
-        if (!this.provider || !Visual.equalObject(oldSettings.provider, this.settings.provider)) {
+        if (!this.provider || !this.equalObject(oldSettings.provider, this.settings.provider)) {
             this.provider = new LocalDataProvider(rows, cols, this.settings.provider);
             this.provider.deriveDefault();
             providerChanged = true;
 
-        } else if (hasDataChanged) {
+        } else if (hasDataChanged) { // maybe a distinction of last row changed or so
             this.provider.clearColumns();
             cols.forEach((c: any) => this.provider.pushDesc(c));
             this.provider.setData(rows);
             this.provider.deriveDefault();
-
         }
-
-        if (!this.lineup || !Visual.equalObject(oldSettings.lineup, this.settings.lineup)) {
+        if (!this.lineup || !this.equalObject(oldSettings.lineup, this.settings.lineup)) {
             if (this.lineup) {
                 this.lineup.destroy();
             }
@@ -108,9 +108,9 @@ export class Visual implements IVisual {
     }
 
     private extract(table: DataViewTable) {
-        const rows = table.rows || [];
-        const colors = this.colorPalette;
 
+        const rows = table.rows || [];
+        let colors = this.colorPalette;
         const cols = table.columns.map((d) => {
             const c: any = {
                 type: 'string',
@@ -123,7 +123,9 @@ export class Visual implements IVisual {
                 c.type = 'boolean';
             } else if (d.type.integer || d.type.numeric) {
                 c.type = 'number';
-                c.colorMapping = colors.getColor(c.column).value;
+                c.colorMapping = colors.getColor(String(this.colorIndex)).value;
+                this.colorIndex++;
+
                 const vs = rows.map((r) => <number>r[d.index!]);
                 c.domain = [Math.min(...vs), Math.max(...vs)];
             } else if (d.type.dateTime) {
@@ -144,7 +146,7 @@ export class Visual implements IVisual {
 
         return { rows, cols, sort };
     }
-    private static equalObject(a: any, b: any) {
+    private equalObject(a: any, b: any) {
         if (a === b) {
             return true;
         }
@@ -160,6 +162,7 @@ export class Visual implements IVisual {
     }
 
     private static parseSettings(dataView: DataView): LineUpVisualSettings {
+        debugger;
         return <LineUpVisualSettings>LineUpVisualSettings.parse(dataView);
     }
 

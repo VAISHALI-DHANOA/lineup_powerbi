@@ -1,13 +1,17 @@
 @import (less) "../node_modules/lineupjs/build/LineUpJS.css";
 
 .lu {
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 0;
-    bottom: 0;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
 
-    .lineup-engine>header {
-        padding-bottom: 1px;
-    }
+  .lineup-engine>header {
+    padding-bottom: 1px;
+  }
+}
+
+.lu-row [data-group=d] {
+  overflow: hidden;
 }

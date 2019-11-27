@@ -1,5 +1,5 @@
 {
-  "name": "lineup_powerbi",
+  "name": "visual",
   "description": "LineUp is an interactive technique designed to create, visualize and explore rankings of items based on a set of heterogeneous attributes.",
   "private": true,
   "version": "1.0.0",
@@ -7,7 +7,8 @@
     "name": "Samuel Gratzl",
     "email": "sam@sgratzl.com"
   },
-  "contributors": [{
+  "contributors": [
+    {
       "name": "Vaishali Dhanoa"
     },
     {
@@ -26,7 +27,6 @@
     "url": "https://github.com/lineupjs/lineup_powerbi.git"
   },
   "homepage": "https://github.com/lineupjs/lineup_powerbi",
-  "name": "visual",
   "scripts": {
     "pbiviz": "pbiviz",
     "start": "pbiviz start",
