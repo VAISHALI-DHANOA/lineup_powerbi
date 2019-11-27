@@ -41,7 +41,6 @@ import VisualObjectInstanceEnumerationObject = powerbi.VisualObjectInstanceEnume
 import { LineUpVisualSettings } from "./settings";
 import { LocalDataProvider } from 'lineupjs';
 import { LineUp } from 'lineupjs';
-import { thresholdFreedmanDiaconis } from "d3";
 
 export class Visual implements IVisual {
     private readonly target: HTMLElement;
@@ -177,6 +176,7 @@ export class Visual implements IVisual {
      *
      */
     enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstance[] | VisualObjectInstanceEnumerationObject {
+        debugger;
         return LineUpVisualSettings.enumerateObjectInstances(this.settings || LineUpVisualSettings.getDefault(), options);
     }
 }
