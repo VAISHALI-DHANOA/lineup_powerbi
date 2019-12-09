@@ -39,15 +39,16 @@ import DataViewTable = powerbi.DataViewTable;
 import SortDirection = powerbi.SortDirection;
 import VisualObjectInstanceEnumerationObject = powerbi.VisualObjectInstanceEnumerationObject;
 import { LineUpVisualSettings } from "./settings";
-import { LocalDataProvider } from 'lineupjs';
+import { LocalDataProvider, Ranking, Column } from 'lineupjs';
 import { LineUp } from 'lineupjs';
-
+import ADataProvider from "lineupjs/src/provider/ADataProvider";
+console.log("Initial log visual");
 export class Visual implements IVisual {
     private readonly target: HTMLElement;
     private readonly colorPalette: IColorPalette;
 
-    private provider: any;
-    private lineup: any;
+    private provider: LocalDataProvider;
+    private lineup: LineUp;
     private settings: LineUpVisualSettings;
     private colorIndex = 0;
 
@@ -56,9 +57,30 @@ export class Visual implements IVisual {
         this.target = options.element;
         this.target.innerHTML = '<div></div>';
         this.settings = new LineUpVisualSettings();
+        this.init();
+    }
+
+    private init() {
+        // persistence API
+        // get properties (= existing Ranking dump)
+        // if ranking dump is available -> restor
+        // if not then create fresh lineup
+        // initialize LineUp event handler (for each event get a new ranking dump and store it to the persistence API)
     }
 
     update(options: VisualUpdateOptions) {
+
+        // check for options.type == VisualUpdateType.all => initialize?
+        // check for options.type == VisualUpdateType.data => update rows/columns
+        // cancel update function for all other types
+
+
+        // update rows/columns only:
+        // diff/merge BI options with existing visual update options
+        // update lineup (in worst case: re-initialize lineup with the new config)
+        // store updated ranking dump to persistence API
+
+        console.log("Update visual", options, this.settings);
         const oldSettings = this.settings;
         this.settings = Visual.parseSettings(options && options.dataViews && options.dataViews[0]);
 
@@ -74,9 +96,11 @@ export class Visual implements IVisual {
             this.provider.deriveDefault();
             providerChanged = true;
 
-        } else if (hasDataChanged) { // maybe a distinction of last row changed or so
+        } else if (hasDataChanged) {
             this.provider.clearColumns();
             cols.forEach((c: any) => this.provider.pushDesc(c));
+            console.log("Rows: ", rows);
+            console.log("Cols: ", cols);
             this.provider.setData(rows);
             this.provider.deriveDefault();
         }
@@ -86,6 +110,24 @@ export class Visual implements IVisual {
             }
 
             this.lineup = new LineUp(<HTMLElement>this.target.firstElementChild!, this.provider, this.settings.lineup);
+            this.lineup.data.getFirstRanking().on(Ranking.EVENT_MOVE_COLUMN, (col: Column, index: number, oldIndex: number) => {
+                // console.log("Move--> ", col, index, oldIndex);
+                // console.log(this.lineup.data.dump(), this.lineup.data.dumpColumn(col), col, index, oldIndex);
+                // let rankingDump = this.lineup.data.dump();
+                // console.log(rankingDump.rankings[0].columns);
+                // this.lineup.update();
+                // console.log(this.lineup.data.getColumns());
+                // console.log("Column Moved");
+                // console.log(this.provider.getLastRanking());
+                // console.log(this.lineup.data.getLastRanking());
+                // let rankingDump = this.lineup.data.dump();
+                // let allCols = rankingDump.rankings[0].columns;
+                // let newIndex = 0;
+                // for (let colIndex = 3; colIndex < allCols.length; colIndex++) {
+
+
+                // }
+            });
 
         } else if (providerChanged) {
             this.lineup.setDataProvider(this.provider);
@@ -161,7 +203,6 @@ export class Visual implements IVisual {
     }
 
     private static parseSettings(dataView: DataView): LineUpVisualSettings {
-        debugger;
         return <LineUpVisualSettings>LineUpVisualSettings.parse(dataView);
     }
 
@@ -176,7 +217,6 @@ export class Visual implements IVisual {
      *
      */
     enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstance[] | VisualObjectInstanceEnumerationObject {
-        debugger;
         return LineUpVisualSettings.enumerateObjectInstances(this.settings || LineUpVisualSettings.getDefault(), options);
     }
 }
