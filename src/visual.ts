@@ -31,6 +31,7 @@ import powerbi from "powerbi-visuals-api";
 import VisualConstructorOptions = powerbi.extensibility.visual.VisualConstructorOptions;
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import IVisual = powerbi.extensibility.visual.IVisual;
+import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import IColorPalette = powerbi.extensibility.IColorPalette;
 import EnumerateVisualObjectInstancesOptions = powerbi.EnumerateVisualObjectInstancesOptions;
 import VisualObjectInstance = powerbi.VisualObjectInstance;
@@ -41,9 +42,11 @@ import VisualObjectInstanceEnumerationObject = powerbi.VisualObjectInstanceEnume
 import { LineUpVisualSettings } from "./settings";
 import { LocalDataProvider, Ranking, Column } from 'lineupjs';
 import { LineUp } from 'lineupjs';
-import ADataProvider from "lineupjs/src/provider/ADataProvider";
-console.log("Initial log visual");
+
+// console.log("Initial log visual");
+
 export class Visual implements IVisual {
+    private visualHost: IVisualHost;
     private readonly target: HTMLElement;
     private readonly colorPalette: IColorPalette;
 
@@ -51,8 +54,10 @@ export class Visual implements IVisual {
     private lineup: LineUp;
     private settings: LineUpVisualSettings;
     private colorIndex = 0;
+    private ranking: any;
 
     constructor(options: VisualConstructorOptions) {
+        this.visualHost = options.host;
         this.colorPalette = options.host.colorPalette;
         this.target = options.element;
         this.target.innerHTML = '<div></div>';
@@ -80,13 +85,18 @@ export class Visual implements IVisual {
         // update lineup (in worst case: re-initialize lineup with the new config)
         // store updated ranking dump to persistence API
 
-        console.log("Update visual", options, this.settings);
+        // console.log("Update visual", options, this.settings);
+
+
+
         const oldSettings = this.settings;
         this.settings = Visual.parseSettings(options && options.dataViews && options.dataViews[0]);
 
         let providerChanged = false;
 
-        const { rows, cols } = this.extract(options.dataViews[0].table!);
+        //const { rows, cols } = this.extract(options.dataViews[0].table!); // cols = ranking.columns instead of cols = this.extract(options.dataViews[0].table!.cols
+        const rows = this.extract(options.dataViews[0].table!).rows;
+        const cols = this.ranking.columns;
         const { oldRows, oldCols } = this.getOldData();
 
         const hasDataChanged = !(rows === oldRows && cols === oldCols);
@@ -99,8 +109,6 @@ export class Visual implements IVisual {
         } else if (hasDataChanged) {
             this.provider.clearColumns();
             cols.forEach((c: any) => this.provider.pushDesc(c));
-            console.log("Rows: ", rows);
-            console.log("Cols: ", cols);
             this.provider.setData(rows);
             this.provider.deriveDefault();
         }
@@ -110,25 +118,12 @@ export class Visual implements IVisual {
             }
 
             this.lineup = new LineUp(<HTMLElement>this.target.firstElementChild!, this.provider, this.settings.lineup);
-            this.lineup.data.getFirstRanking().on(Ranking.EVENT_MOVE_COLUMN, (col: Column, index: number, oldIndex: number) => {
-                // console.log("Move--> ", col, index, oldIndex);
-                // console.log(this.lineup.data.dump(), this.lineup.data.dumpColumn(col), col, index, oldIndex);
-                // let rankingDump = this.lineup.data.dump();
-                // console.log(rankingDump.rankings[0].columns);
-                // this.lineup.update();
-                // console.log(this.lineup.data.getColumns());
-                // console.log("Column Moved");
-                // console.log(this.provider.getLastRanking());
-                // console.log(this.lineup.data.getLastRanking());
-                // let rankingDump = this.lineup.data.dump();
-                // let allCols = rankingDump.rankings[0].columns;
-                // let newIndex = 0;
-                // for (let colIndex = 3; colIndex < allCols.length; colIndex++) {
+            this.ranking = this.lineup.data.getLastRanking();
+            this.ranking.on(Ranking.EVENT_MOVE_COLUMN, (col: Column, index: number, oldIndex: number) => {
+                console.log(col, index, oldIndex);
+                console.log(this.ranking); // updated order of columns --> ranking.columns/ ranking.getColumns()
 
-
-                // }
             });
-
         } else if (providerChanged) {
             this.lineup.setDataProvider(this.provider);
 
