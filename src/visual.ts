@@ -66,35 +66,17 @@ export class Visual implements IVisual {
     }
 
     private init() {
-        // persistence API
-        // get properties (= existing Ranking dump)
-        // if ranking dump is available -> restor
-        // if not then create fresh lineup
-        // initialize LineUp event handler (for each event get a new ranking dump and store it to the persistence API)
+
     }
 
     update(options: VisualUpdateOptions) {
-
-        // check for options.type == VisualUpdateType.all => initialize?
-        // check for options.type == VisualUpdateType.data => update rows/columns
-        // cancel update function for all other types
-
-
-        // update rows/columns only:
-        // diff/merge BI options with existing visual update options
-        // update lineup (in worst case: re-initialize lineup with the new config)
-        // store updated ranking dump to persistence API
-
-        // console.log("Update visual", options, this.settings);
-
-
-
         const oldSettings = this.settings;
         this.settings = Visual.parseSettings(options && options.dataViews && options.dataViews[0]);
 
         let providerChanged = false;
 
         //const { rows, cols } = this.extract(options.dataViews[0].table!); // cols = ranking.columns instead of cols = this.extract(options.dataViews[0].table!.cols
+        // New Code should look like this:
         const rows = this.extract(options.dataViews[0].table!).rows;
         const cols = this.ranking.columns;
         const { oldRows, oldCols } = this.getOldData();
