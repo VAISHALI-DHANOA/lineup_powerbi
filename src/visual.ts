@@ -54,7 +54,7 @@ export class Visual implements IVisual {
     private lineup: LineUp;
     private settings: LineUpVisualSettings;
     private colorIndex = 0;
-    private ranking: any;
+    private ranking: Ranking;
 
     constructor(options: VisualConstructorOptions) {
         this.visualHost = options.host;
@@ -67,6 +67,14 @@ export class Visual implements IVisual {
 
     private init() {
 
+        // if (this.lineup) {
+        //     this.ranking = this.lineup.data.getLastRanking();
+        //     this.ranking.on(Ranking.EVENT_MOVE_COLUMN, (col: Column, index: number, oldIndex: number) => {
+        //         console.log(col, index, oldIndex);
+        //         console.log(this.ranking.children); // updated order of columns --> ranking.columns/ ranking.getColumns()
+
+        //     });
+        // }
     }
 
     update(options: VisualUpdateOptions) {
@@ -75,10 +83,12 @@ export class Visual implements IVisual {
 
         let providerChanged = false;
 
-        //const { rows, cols } = this.extract(options.dataViews[0].table!); // cols = ranking.columns instead of cols = this.extract(options.dataViews[0].table!.cols
+        const { rows, cols } = this.extract(options.dataViews[0].table!); // cols = ranking.columns instead of cols = this.extract(options.dataViews[0].table!.cols
         // New Code should look like this:
-        const rows = this.extract(options.dataViews[0].table!).rows;
-        const cols = this.ranking.columns;
+        // const rows = this.extract(options.dataViews[0].table!).rows;
+        // const cols = this.ranking.children;
+        const newCols = this.ranking.children[0].desc;
+
         const { oldRows, oldCols } = this.getOldData();
 
         const hasDataChanged = !(rows === oldRows && cols === oldCols);
@@ -100,17 +110,25 @@ export class Visual implements IVisual {
             }
 
             this.lineup = new LineUp(<HTMLElement>this.target.firstElementChild!, this.provider, this.settings.lineup);
-            this.ranking = this.lineup.data.getLastRanking();
-            this.ranking.on(Ranking.EVENT_MOVE_COLUMN, (col: Column, index: number, oldIndex: number) => {
-                console.log(col, index, oldIndex);
-                console.log(this.ranking); // updated order of columns --> ranking.columns/ ranking.getColumns()
+            // this.ranking = this.lineup.data.getLastRanking();
+            // this.ranking.on(Ranking.EVENT_MOVE_COLUMN, (col: Column, index: number, oldIndex: number) => {
+            //     console.log(col, index, oldIndex);
+            //     console.log(this.ranking.children); // updated order of columns --> ranking.columns/ ranking.getColumns()
 
-            });
+            // });
         } else if (providerChanged) {
             this.lineup.setDataProvider(this.provider);
 
         } else {
             this.lineup.update();
+        }
+
+        if (this.lineup) {
+            this.ranking = this.lineup.data.getLastRanking();
+            this.ranking.on(Ranking.EVENT_MOVE_COLUMN, (col: Column, index: number, oldIndex: number) => {
+                console.log(this.ranking.children); // updated order of columns --> ranking.columns/ ranking.getColumns()
+
+            });
         }
     }
 
