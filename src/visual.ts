@@ -38,15 +38,16 @@ import VisualObjectInstance = powerbi.VisualObjectInstance;
 import DataView = powerbi.DataView;
 import DataViewTable = powerbi.DataViewTable;
 import SortDirection = powerbi.SortDirection;
+import VisualUpdateType = powerbi.VisualUpdateType;
 import VisualObjectInstanceEnumerationObject = powerbi.VisualObjectInstanceEnumerationObject;
 import { LineUpVisualSettings } from "./settings";
-import { LocalDataProvider, Ranking, Column } from 'lineupjs';
+import { LocalDataProvider, Ranking, Column, IColumnDesc } from 'lineupjs';
 import { LineUp } from 'lineupjs';
+import { csvParse } from "d3";
 
 // console.log("Initial log visual");
-
 export class Visual implements IVisual {
-    private visualHost: IVisualHost;
+    private host: IVisualHost;
     private readonly target: HTMLElement;
     private readonly colorPalette: IColorPalette;
 
@@ -55,43 +56,32 @@ export class Visual implements IVisual {
     private settings: LineUpVisualSettings;
     private colorIndex = 0;
     private ranking: Ranking;
+    private listeners: any;
+    private oldState: Array<IColumnDesc>;
+    private newState: Array<IColumnDesc>;
 
     constructor(options: VisualConstructorOptions) {
-        this.visualHost = options.host;
+        this.host = options.host;
         this.colorPalette = options.host.colorPalette;
         this.target = options.element;
         this.target.innerHTML = '<div></div>';
         this.settings = new LineUpVisualSettings();
-        this.init();
-    }
-
-    private init() {
-
-        // if (this.lineup) {
-        //     this.ranking = this.lineup.data.getLastRanking();
-        //     this.ranking.on(Ranking.EVENT_MOVE_COLUMN, (col: Column, index: number, oldIndex: number) => {
-        //         console.log(col, index, oldIndex);
-        //         console.log(this.ranking.children); // updated order of columns --> ranking.columns/ ranking.getColumns()
-
-        //     });
-        // }
+        this.oldState = new Array<IColumnDesc>();
     }
 
     update(options: VisualUpdateOptions) {
+
         const oldSettings = this.settings;
         this.settings = Visual.parseSettings(options && options.dataViews && options.dataViews[0]);
 
         let providerChanged = false;
 
-        const { rows, cols } = this.extract(options.dataViews[0].table!); // cols = ranking.columns instead of cols = this.extract(options.dataViews[0].table!.cols
-        // New Code should look like this:
-        // const rows = this.extract(options.dataViews[0].table!).rows;
-        // const cols = this.ranking.children;
-        const newCols = this.ranking.children[0].desc;
+        let { rows, cols } = this.extract(options.dataViews[0].table!);
 
-        const { oldRows, oldCols } = this.getOldData();
+        let { oldRows, oldCols } = this.getOldData();
 
         const hasDataChanged = !(rows === oldRows && cols === oldCols);
+
 
         if (!this.provider || !this.equalObject(oldSettings.provider, this.settings.provider)) {
             this.provider = new LocalDataProvider(rows, cols, this.settings.provider);
@@ -99,42 +89,77 @@ export class Visual implements IVisual {
             providerChanged = true;
 
         } else if (hasDataChanged) {
+            if (cols.length >= oldCols.length) { //cols.length == 1 is checked because on view resize the last element is pushed again.
+                if (cols.length == 1) {
+                    if (options.type == VisualUpdateType.Resize) { // check for resize on one element length
+                        this.oldState.push(cols[cols.length - 1]);
+                    }
+                }
+                else {
+                    if (options.type == VisualUpdateType.Data) {
+                        this.oldState.push(cols[cols.length - 1]);
+                    }
+                }
+            } else {
+                console.log("Remove Element registered");
+                let flag: boolean = false;
+                let removedColumn = null;
+
+                oldCols.forEach((oldC: any) => {
+                    flag = false;
+                    cols.forEach((newC: any) => {
+                        if (oldC.label === newC.label) {
+                            flag = true;
+                            return;
+                        }
+                    })
+
+                    if (!flag) {
+                        removedColumn = oldC;
+                        console.log("Remove this ", removedColumn, " with index ", this.oldState.indexOf(oldC));
+                        let index = this.oldState.indexOf(oldC);
+                        this.oldState.splice(index, 1); // doesn't handle the rows properly --> need to compare labels with ids to ensure proper columns ids
+
+                    }
+                })
+            }
+
             this.provider.clearColumns();
-            cols.forEach((c: any) => this.provider.pushDesc(c));
+            console.log("Old State --> ", this.oldState);
+            this.oldState.forEach((c: any) => {
+                this.provider.pushDesc(c);
+            });
+
             this.provider.setData(rows);
             this.provider.deriveDefault();
         }
+
         if (!this.lineup || !this.equalObject(oldSettings.lineup, this.settings.lineup)) {
-            if (this.lineup) {
-                this.lineup.destroy();
-            }
-
             this.lineup = new LineUp(<HTMLElement>this.target.firstElementChild!, this.provider, this.settings.lineup);
-            // this.ranking = this.lineup.data.getLastRanking();
-            // this.ranking.on(Ranking.EVENT_MOVE_COLUMN, (col: Column, index: number, oldIndex: number) => {
-            //     console.log(col, index, oldIndex);
-            //     console.log(this.ranking.children); // updated order of columns --> ranking.columns/ ranking.getColumns()
 
-            // });
         } else if (providerChanged) {
             this.lineup.setDataProvider(this.provider);
-
         } else {
             this.lineup.update();
         }
 
         if (this.lineup) {
             this.ranking = this.lineup.data.getLastRanking();
-            this.ranking.on(Ranking.EVENT_MOVE_COLUMN, (col: Column, index: number, oldIndex: number) => {
-                console.log(this.ranking.children); // updated order of columns --> ranking.columns/ ranking.getColumns()
 
+            this.ranking.on(Ranking.EVENT_MOVE_COLUMN, (col: Column, index: number, oldIndex: number) => {
+                console.log("Move column event registered");
+                this.oldState.length = 0;
+                this.ranking.children.slice(3, this.ranking.children.length).forEach((c: Column) => this.oldState.push(c.desc));
+            });
+            this.ranking.on(Ranking.EVENT_REMOVE_COLUMN, (col: Column, index: number) => {
+                console.log("Remove column event registered");
             });
         }
     }
 
     private getOldData() {
         let rows = null;
-        let cols = null;
+        let cols = new Array<any>();
 
         if (this.provider != null) {
             rows = this.provider.data;
@@ -144,6 +169,8 @@ export class Visual implements IVisual {
     }
 
     private extract(table: DataViewTable) {
+
+        console.log("Extract --> ", table);
 
         const rows = table.rows || [];
         let colors = this.colorPalette;
@@ -182,6 +209,7 @@ export class Visual implements IVisual {
 
         return { rows, cols, sort };
     }
+
     private equalObject(a: any, b: any) {
         if (a === b) {
             return true;
