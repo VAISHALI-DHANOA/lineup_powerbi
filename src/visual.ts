@@ -41,9 +41,8 @@ import SortDirection = powerbi.SortDirection;
 import VisualUpdateType = powerbi.VisualUpdateType;
 import VisualObjectInstanceEnumerationObject = powerbi.VisualObjectInstanceEnumerationObject;
 import { LineUpVisualSettings } from "./settings";
-import { LocalDataProvider, Ranking, Column, IColumnDesc } from 'lineupjs';
+import { LocalDataProvider, Ranking, Column, IColumnDesc, ISortCriteria } from 'lineupjs';
 import { LineUp } from 'lineupjs';
-import { csvParse } from "d3";
 
 // console.log("Initial log visual");
 export class Visual implements IVisual {
@@ -57,14 +56,18 @@ export class Visual implements IVisual {
     private colorIndex = 0;
     private ranking: Ranking;
     private state: Array<any>;
+    private hasDataChanged: boolean;
+    private sortCriteria: ISortCriteria[];
 
     constructor(options: VisualConstructorOptions) {
+
         this.host = options.host;
         this.colorPalette = options.host.colorPalette;
         this.target = options.element;
         this.target.innerHTML = '<div></div>';
         this.settings = new LineUpVisualSettings();
         this.state = new Array<any>();
+        this.hasDataChanged = false;
     }
 
 
@@ -81,14 +84,15 @@ export class Visual implements IVisual {
 
         let { oldRows, oldCols } = this.getOldData();
 
-        const hasDataChanged = !(rows === oldRows && cols === oldCols);
+        this.hasDataChanged = !(rows === oldRows && cols === oldCols);
 
         if (!this.provider || !this.equalObject(oldSettings.provider, this.settings.provider)) {
             this.provider = new LocalDataProvider(rows, cols, this.settings.provider);
             this.provider.deriveDefault();
             providerChanged = true;
 
-        } else if (hasDataChanged) {
+        } else if (this.hasDataChanged) {
+
 
             if (cols.length == oldCols.length) {
                 if (this.state.length == 0) {
@@ -99,28 +103,7 @@ export class Visual implements IVisual {
                 this.state.push(cols[cols.length - 1]);
 
             } else {
-
-                this.state.forEach((s: any) => {
-                    s.column = -1;
-                    cols.forEach((c: any) => {
-                        if (c.label == s.label) {
-                            s.column = c.column;
-                        }
-                    });
-                });
-
-                let indexToBeRemoved = -1;
-
-                for (let i = 0; i < this.state.length; i++) {
-                    if (this.state[i].column == -1) {
-                        indexToBeRemoved = i;
-                        break;
-                    }
-                }
-
-                if (indexToBeRemoved) {
-                    this.state.splice(indexToBeRemoved, 1);
-                }
+                this.removeColumnPBI(cols);
             }
 
             this.provider.clearColumns();
@@ -137,21 +120,67 @@ export class Visual implements IVisual {
 
         } else if (providerChanged) {
             this.lineup.setDataProvider(this.provider);
+
         } else {
             this.lineup.update();
         }
 
         if (this.lineup) {
+            debugger;
             this.ranking = this.lineup.data.getLastRanking();
+            this.handleEventListeners();
+        }
+    }
 
-            this.ranking.on(Ranking.EVENT_MOVE_COLUMN, (col: Column, index: number, oldIndex: number) => {
-                console.log("Move column event registered");
-                this.state.length = 0;
-                this.ranking.children.slice(3, this.ranking.children.length).forEach((c: Column) => this.state.push(c.desc));
+    private handleEventListeners() {
+
+        this.ranking.on(Ranking.EVENT_MOVE_COLUMN, (col: Column, index: number, oldIndex: number) => {
+            console.log("Move column event registered");
+            this.state.length = 0;
+            this.ranking.children.slice(3, this.ranking.children.length).forEach((c: Column) => this.state.push(c.desc));
+        });
+
+        this.ranking.on(Ranking.EVENT_REMOVE_COLUMN, (col: Column, index: number) => { // Remove the column from state and update it. and also remove it from cols?
+            console.log("Remove column event registered");
+        });
+
+        this.ranking.on(Ranking.EVENT_FILTER_CHANGED, (previous: number, current: number) => {
+
+        });
+
+        this.ranking.on(Ranking.EVENT_SORT_CRITERIA_CHANGED, (previous: number, current: number) => {
+            console.log("Sorting registered");
+            this.sortCriteria = this.ranking.getSortCriteria();
+        });
+
+        if (this.hasDataChanged) {
+            this.ranking.setSortCriteria(this.sortCriteria);
+            this.provider.sort(this.ranking);
+        }
+    }
+
+    private removeColumnPBI(cols: any[]) {
+
+        this.state.forEach((s: any) => {
+            s.column = -1;
+            cols.forEach((c: any) => {
+                if (c.label == s.label) {
+                    s.column = c.column;
+                }
             });
-            this.ranking.on(Ranking.EVENT_REMOVE_COLUMN, (col: Column, index: number) => {
-                console.log("Remove column event registered");
-            });
+        });
+
+        let indexToBeRemoved = -1;
+
+        for (let i = 0; i < this.state.length; i++) {
+            if (this.state[i].column == -1) {
+                indexToBeRemoved = i;
+                break;
+            }
+        }
+
+        if (indexToBeRemoved) {
+            this.state.splice(indexToBeRemoved, 1);
         }
     }
 
