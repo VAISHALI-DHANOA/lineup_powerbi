@@ -39,9 +39,11 @@
     "@types/d3": "5.7.2",
     "core-js": "3.2.1",
     "d3": "5.10.0",
+    "fast-deep-equal": "^3.1.1",
     "lineupjs": "^3.1.5",
     "powerbi-visuals-api": "^2.6.1",
-    "powerbi-visuals-utils-dataviewutils": "^2.2.1"
+    "powerbi-visuals-utils-dataviewutils": "^2.2.1",
+    "tslib": "^1.10.0"
   },
   "devDependencies": {
     "ts-loader": "6.0.4",

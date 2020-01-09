@@ -31,8 +31,8 @@ import powerbi from "powerbi-visuals-api";
 import VisualConstructorOptions = powerbi.extensibility.visual.VisualConstructorOptions;
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import IVisual = powerbi.extensibility.visual.IVisual;
-import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import IColorPalette = powerbi.extensibility.IColorPalette;
+import ILocalVisualStorageService = powerbi.extensibility.ILocalVisualStorageService;
 import EnumerateVisualObjectInstancesOptions = powerbi.EnumerateVisualObjectInstancesOptions;
 import VisualObjectInstance = powerbi.VisualObjectInstance;
 import DataView = powerbi.DataView;
@@ -41,12 +41,13 @@ import SortDirection = powerbi.SortDirection;
 import VisualUpdateType = powerbi.VisualUpdateType;
 import VisualObjectInstanceEnumerationObject = powerbi.VisualObjectInstanceEnumerationObject;
 import { LineUpVisualSettings } from "./settings";
-import { LocalDataProvider, Ranking, Column, IColumnDesc, ISortCriteria } from 'lineupjs';
+import { LocalDataProvider, Ranking, Column, IColumnDesc, ISortCriteria, INumberFilter, NumberColumn } from 'lineupjs';
 import { LineUp } from 'lineupjs';
+import { IOrderedGroup } from "lineupjs/src/model/Group";
+import { isNumberColumn } from 'lineupjs/src/model/INumberColumn';
 
 // console.log("Initial log visual");
 export class Visual implements IVisual {
-    private host: IVisualHost;
     private readonly target: HTMLElement;
     private readonly colorPalette: IColorPalette;
 
@@ -58,16 +59,21 @@ export class Visual implements IVisual {
     private state: Array<any>;
     private hasDataChanged: boolean;
     private sortCriteria: ISortCriteria[];
+    private groupInfo: { groups: IOrderedGroup[], colName: any };
+    private groups: Column[] = [];
+    private filterInfo: { filter: INumberFilter, colName: any };
+    private hasGroupCriteriaChanged: boolean;
 
     constructor(options: VisualConstructorOptions) {
 
-        this.host = options.host;
+        this.state = new Array<any>();
         this.colorPalette = options.host.colorPalette;
         this.target = options.element;
         this.target.innerHTML = '<div></div>';
         this.settings = new LineUpVisualSettings();
-        this.state = new Array<any>();
         this.hasDataChanged = false;
+        this.sortCriteria = new Array<ISortCriteria>();
+        this.hasGroupCriteriaChanged = false;
     }
 
 
@@ -92,7 +98,6 @@ export class Visual implements IVisual {
             providerChanged = true;
 
         } else if (this.hasDataChanged) {
-
 
             if (cols.length == oldCols.length) {
                 if (this.state.length == 0) {
@@ -126,37 +131,106 @@ export class Visual implements IVisual {
         }
 
         if (this.lineup) {
-            debugger;
             this.ranking = this.lineup.data.getLastRanking();
-            this.handleEventListeners();
+            this.handleEventListeners(rows, cols);
         }
     }
 
-    private handleEventListeners() {
+    private handleEventListeners(rows: any[], cols: any[]) {
 
         this.ranking.on(Ranking.EVENT_MOVE_COLUMN, (col: Column, index: number, oldIndex: number) => {
-            console.log("Move column event registered");
             this.state.length = 0;
             this.ranking.children.slice(3, this.ranking.children.length).forEach((c: Column) => this.state.push(c.desc));
         });
 
         this.ranking.on(Ranking.EVENT_REMOVE_COLUMN, (col: Column, index: number) => { // Remove the column from state and update it. and also remove it from cols?
-            console.log("Remove column event registered");
-        });
-
-        this.ranking.on(Ranking.EVENT_FILTER_CHANGED, (previous: number, current: number) => {
-
         });
 
         this.ranking.on(Ranking.EVENT_SORT_CRITERIA_CHANGED, (previous: number, current: number) => {
-            console.log("Sorting registered");
             this.sortCriteria = this.ranking.getSortCriteria();
+        });
+
+        // Check for move event
+        this.ranking.on(Ranking.EVENT_GROUPS_CHANGED, (previous: number[], current: number[], previousGroups: IOrderedGroup[], currentGroups: IOrderedGroup[]) => {
+            if (this.hasGroupCriteriaChanged && currentGroups.length > 1) {
+
+                this.groupInfo = { groups: this.ranking.getGroups(), colName: "Total Downtime Minutes SPLY" };
+                this.hasGroupCriteriaChanged = false;
+
+                this.groups.forEach((column) => {
+                    const col = this.ranking.children.find((d) => d.desc.label == "Total Downtime Minutes SPLY");
+                    if (col) {
+                        this.groups.push(col);
+                        return;
+                    }
+                    const findDesc = (c: any) => cols.find((d) => d.label === c || (<any>d).column === c);
+
+                    const desc = findDesc(column);
+
+                    if (desc && this.provider.push(this.ranking, desc)) {
+                        return;
+                    }
+                });
+                if (this.groups.length > 0) {
+                    this.ranking.setGroupCriteria(this.groups);
+                }
+            }
+        });
+
+        this.ranking.on(Ranking.EVENT_GROUP_CRITERIA_CHANGED, (previous: Column[], current: Column[]) => {
+            this.hasGroupCriteriaChanged = true;
+        });
+
+        this.ranking.on(Ranking.EVENT_GROUP_SORT_CRITERIA_CHANGED, (previous: ISortCriteria[], current: ISortCriteria[]) => {
+        });
+
+        this.ranking.on(Ranking.EVENT_FILTER_CHANGED, (previous: INumberFilter, current: INumberFilter) => {
+
+            this.ranking.children.forEach((c: Column) => {
+                if (c.isFiltered()) {
+                    this.filterInfo = { filter: current, colName: c.label };
+                }
+            });
+        })
+
+        this.ranking.on(Ranking.EVENT_WIDTH_CHANGED, (previous: number, current: number) => {
         });
 
         if (this.hasDataChanged) {
             this.ranking.setSortCriteria(this.sortCriteria);
             this.provider.sort(this.ranking);
+
+            if (this.filterInfo) {
+                this.ranking.children.forEach((c: Column) => {
+                    if (c.desc.type == "number" && c.label == this.filterInfo.colName) {
+                        (<NumberColumn>c).setFilter(this.filterInfo.filter);
+                    }
+                });
+            }
+
+            // if (this.groups.length > 1) {
+            //     debugger;
+            //     this.ranking.setGroups(this.groups);
+            //     this.ranking.groupBy(this.ranking.children[4]);
+            //     console.log(this.ranking);
+
+
+            //     for (let i = 3; i < this.ranking.children.length; i++) {
+            //         console.log("Ranking --> ", this.ranking.children[i].desc);
+            //         for (let j = 0; j < this.state.length; j++) {
+            //             if (this.state[j].label == this.ranking.children[i].label) {
+            //                 this.state[j] = this.ranking.children[i].desc;
+            //                 console.log("State -->", this.state[j]);
+            //             }
+            //         }
+            //     }
+            // }
         }
+
+        // NOT NEEDED
+        // this.ranking.on(Ranking.EVENT_ORDER_CHANGED, (previous: number[], current: number[], previousGroups: IOrderedGroup[], currentGroups: IOrderedGroup[]) => {
+        //     console.log("Order change registered");
+        // });
     }
 
     private removeColumnPBI(cols: any[]) {
