@@ -56,9 +56,7 @@ export class Visual implements IVisual {
     private settings: LineUpVisualSettings;
     private colorIndex = 0;
     private ranking: Ranking;
-    private listeners: any;
-    private oldState: Array<IColumnDesc>;
-    private newState: Array<IColumnDesc>;
+    private state: Array<IColumnDesc>;
 
     constructor(options: VisualConstructorOptions) {
         this.host = options.host;
@@ -66,9 +64,12 @@ export class Visual implements IVisual {
         this.target = options.element;
         this.target.innerHTML = '<div></div>';
         this.settings = new LineUpVisualSettings();
-        this.oldState = new Array<IColumnDesc>();
+        this.state = new Array<IColumnDesc>();
     }
 
+
+    // The first entry in the line up is recorded as VisualUpdateType.Resize in Power BI.
+    // label based matching due to lack of unique identifier
     update(options: VisualUpdateOptions) {
 
         const oldSettings = this.settings;
@@ -89,21 +90,17 @@ export class Visual implements IVisual {
             providerChanged = true;
 
         } else if (hasDataChanged) {
-            if (cols.length >= oldCols.length) { //cols.length == 1 is checked because on view resize the last element is pushed again.
-                if (cols.length == 1) {
-                    if (options.type == VisualUpdateType.Resize) { // check for resize on one element length
-                        this.oldState.push(cols[cols.length - 1]);
-                    }
+
+            if (cols.length == oldCols.length) {
+                if (this.state.length == 0) {
+                    this.state.push(cols[cols.length - 1]);
+
                 }
-                else {
-                    if (options.type == VisualUpdateType.Data) {
-                        this.oldState.push(cols[cols.length - 1]);
-                    }
-                }
+            } else if (cols.length > oldCols.length) {
+                this.state.push(cols[cols.length - 1]);
+
             } else {
-                console.log("Remove Element registered");
                 let flag: boolean = false;
-                let removedColumn = null;
 
                 oldCols.forEach((oldC: any) => {
                     flag = false;
@@ -115,18 +112,22 @@ export class Visual implements IVisual {
                     })
 
                     if (!flag) {
-                        removedColumn = oldC;
-                        console.log("Remove this ", removedColumn, " with index ", this.oldState.indexOf(oldC));
-                        let index = this.oldState.indexOf(oldC);
-                        this.oldState.splice(index, 1); // doesn't handle the rows properly --> need to compare labels with ids to ensure proper columns ids
-
+                        let index = this.state.indexOf(oldC);
+                        this.state.splice(index, 1);
+                        cols.forEach((c: any) => {
+                            this.state.forEach((o: any) => {
+                                if (c.label == o.label) {
+                                    o.column = c.column;
+                                    return;
+                                }
+                            })
+                        });
                     }
                 })
             }
 
             this.provider.clearColumns();
-            console.log("Old State --> ", this.oldState);
-            this.oldState.forEach((c: any) => {
+            this.state.forEach((c: any) => {
                 this.provider.pushDesc(c);
             });
 
@@ -148,8 +149,8 @@ export class Visual implements IVisual {
 
             this.ranking.on(Ranking.EVENT_MOVE_COLUMN, (col: Column, index: number, oldIndex: number) => {
                 console.log("Move column event registered");
-                this.oldState.length = 0;
-                this.ranking.children.slice(3, this.ranking.children.length).forEach((c: Column) => this.oldState.push(c.desc));
+                this.state.length = 0;
+                this.ranking.children.slice(3, this.ranking.children.length).forEach((c: Column) => this.state.push(c.desc));
             });
             this.ranking.on(Ranking.EVENT_REMOVE_COLUMN, (col: Column, index: number) => {
                 console.log("Remove column event registered");
@@ -169,8 +170,6 @@ export class Visual implements IVisual {
     }
 
     private extract(table: DataViewTable) {
-
-        console.log("Extract --> ", table);
 
         const rows = table.rows || [];
         let colors = this.colorPalette;
