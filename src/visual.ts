@@ -56,7 +56,7 @@ export class Visual implements IVisual {
     private settings: LineUpVisualSettings;
     private colorIndex = 0;
     private ranking: Ranking;
-    private state: Array<IColumnDesc>;
+    private state: Array<any>;
 
     constructor(options: VisualConstructorOptions) {
         this.host = options.host;
@@ -64,12 +64,12 @@ export class Visual implements IVisual {
         this.target = options.element;
         this.target.innerHTML = '<div></div>';
         this.settings = new LineUpVisualSettings();
-        this.state = new Array<IColumnDesc>();
+        this.state = new Array<any>();
     }
 
 
     // The first entry in the line up is recorded as VisualUpdateType.Resize in Power BI.
-    // label based matching due to lack of unique identifier
+    // Label based matching due to lack of unique identifier
     update(options: VisualUpdateOptions) {
 
         const oldSettings = this.settings;
@@ -82,7 +82,6 @@ export class Visual implements IVisual {
         let { oldRows, oldCols } = this.getOldData();
 
         const hasDataChanged = !(rows === oldRows && cols === oldCols);
-
 
         if (!this.provider || !this.equalObject(oldSettings.provider, this.settings.provider)) {
             this.provider = new LocalDataProvider(rows, cols, this.settings.provider);
@@ -100,30 +99,28 @@ export class Visual implements IVisual {
                 this.state.push(cols[cols.length - 1]);
 
             } else {
-                let flag: boolean = false;
 
-                oldCols.forEach((oldC: any) => {
-                    flag = false;
-                    cols.forEach((newC: any) => {
-                        if (oldC.label === newC.label) {
-                            flag = true;
-                            return;
+                this.state.forEach((s: any) => {
+                    s.column = -1;
+                    cols.forEach((c: any) => {
+                        if (c.label == s.label) {
+                            s.column = c.column;
                         }
-                    })
+                    });
+                });
 
-                    if (!flag) {
-                        let index = this.state.indexOf(oldC);
-                        this.state.splice(index, 1);
-                        cols.forEach((c: any) => {
-                            this.state.forEach((o: any) => {
-                                if (c.label == o.label) {
-                                    o.column = c.column;
-                                    return;
-                                }
-                            })
-                        });
+                let indexToBeRemoved = -1;
+
+                for (let i = 0; i < this.state.length; i++) {
+                    if (this.state[i].column == -1) {
+                        indexToBeRemoved = i;
+                        break;
                     }
-                })
+                }
+
+                if (indexToBeRemoved) {
+                    this.state.splice(indexToBeRemoved, 1);
+                }
             }
 
             this.provider.clearColumns();
