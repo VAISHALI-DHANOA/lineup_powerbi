@@ -60,9 +60,9 @@ export class Visual implements IVisual {
     private state: Array<any>;
     private hasDataChanged: boolean;
     private sortCriteria: ISortCriteria[];
-    private groups: Column[] = [];
+    private groupCriteria: Column[] = [];
+    private groupSortCriteria: ISortCriteria[] = [];
     private filterInfo: { filter: INumberFilter, colName: any };
-    private hasGroupCriteriaChanged: boolean;
 
     constructor(options: VisualConstructorOptions) {
 
@@ -73,7 +73,6 @@ export class Visual implements IVisual {
         this.settings = new LineUpVisualSettings();
         this.hasDataChanged = false;
         this.sortCriteria = new Array<ISortCriteria>();
-        this.hasGroupCriteriaChanged = false;
     }
 
 
@@ -112,8 +111,6 @@ export class Visual implements IVisual {
                 removedColumns = this.removeColumnPBI(cols);
             }
 
-            console.log(this.state);
-
             this.provider.clearColumns();
             this.state.forEach((c: any) => {
                 this.provider.pushDesc(c);
@@ -138,23 +135,24 @@ export class Visual implements IVisual {
             this.handleEventListeners(rows, cols);
         }
 
-        if (this.groups.length > 0) {
+        if (this.groupCriteria.length > 0) {
             let indexToBeRemoved = -1;
 
-            this.groups.forEach((g: any) => {
+            this.groupCriteria.forEach((g: any) => {
                 removedColumns.forEach((c: any) => {
                     if (c.label == g.label) {
-                        indexToBeRemoved = this.groups.indexOf(g);
+                        indexToBeRemoved = this.groupCriteria.indexOf(g);
                     }
                 });
             });
 
             if (indexToBeRemoved >= 0) {
-                this.groups.splice(indexToBeRemoved, 1);
+                this.groupCriteria.splice(indexToBeRemoved, 1);
             }
 
-            if (this.groups.length > 0) {
-                this.ranking.setGroupCriteria(this.groups);
+            if (this.groupCriteria.length > 0) {
+                this.ranking.setGroupCriteria(this.groupCriteria);
+                this.ranking.setGroupSortCriteria(this.groupSortCriteria);
             }
         }
     }
@@ -180,8 +178,8 @@ export class Visual implements IVisual {
         this.ranking.on(Ranking.EVENT_GROUP_CRITERIA_CHANGED, (previous: Column[], current: Column[]) => {
             let groupedColumn: Column;
 
-            if (this.groups.length > 0) {
-                this.groups.forEach((g: Column) => {
+            if (this.groupCriteria.length > 0) {
+                this.groupCriteria.forEach((g: Column) => {
                     current.forEach((c: Column) => {
                         groupedColumn = c;
                         if (g.label == c.label) {
@@ -190,17 +188,39 @@ export class Visual implements IVisual {
                         }
                     })
                     if (groupedColumn) {
-                        this.groups.push(groupedColumn);
+                        this.groupCriteria.push(groupedColumn);
                     }
                 })
             } else {
                 current.forEach((c: Column) => {
-                    this.groups.push(c);
+                    this.groupCriteria.push(c);
                 });
             }
         });
 
         this.ranking.on(Ranking.EVENT_GROUP_SORT_CRITERIA_CHANGED, (previous: ISortCriteria[], current: ISortCriteria[]) => {
+
+            let gSortCriteria: ISortCriteria;
+
+            if (this.groupSortCriteria.length > 0) {
+                this.groupSortCriteria.forEach((g: ISortCriteria) => {
+                    current.forEach((c: ISortCriteria) => {
+                        gSortCriteria = c;
+                        if (g.col.label == c.col.label) {
+                            gSortCriteria = null;
+                            return;
+                        }
+                    })
+                    if (gSortCriteria) {
+                        this.groupSortCriteria.push(gSortCriteria);
+                    }
+                })
+            } else {
+                current.forEach((c: ISortCriteria) => {
+                    this.groupSortCriteria.push(c);
+                });
+            }
+
         });
 
         this.ranking.on(Ranking.EVENT_FILTER_CHANGED, (previous: INumberFilter, current: INumberFilter) => {
