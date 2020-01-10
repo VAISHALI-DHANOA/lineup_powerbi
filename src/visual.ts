@@ -45,7 +45,7 @@ import { LocalDataProvider, Ranking, Column, IColumnDesc, ISortCriteria, INumber
 import { LineUp } from 'lineupjs';
 import { IOrderedGroup } from "lineupjs/src/model/Group";
 import { isNumberColumn } from 'lineupjs/src/model/INumberColumn';
-import { thresholdScott } from "d3";
+import { thresholdScott, csvParse } from "d3";
 
 // console.log("Initial log visual");
 export class Visual implements IVisual {
@@ -97,21 +97,31 @@ export class Visual implements IVisual {
             this.provider.deriveDefault();
             providerChanged = true;
 
-        } else if (this.hasDataChanged) {
+        } else if (this.hasDataChanged && options.type == VisualUpdateType.Data) {
 
-            if (cols.length == oldCols.length) {
-                if (this.state.length == 0) {
-                    this.state.push(cols[cols.length - 1]);
+            if (cols.length >= oldCols.length) {
 
-                }
-            } else if (cols.length > oldCols.length) {
-                this.state.push(cols[cols.length - 1]);
+                let flag = true;
 
-            } else {
+                cols.forEach((c: any) => {
+                    flag = true;
+                    this.state.forEach((s: any) => {
+                        if (c.label === s.label) {
+                            flag = false;
+                        }
+                    })
+                    if (flag) {
+                        this.state.push(c);
+                    }
+                });
+
+            }
+            else {
                 removedColumns = this.removeColumnPBI(cols);
             }
 
             this.provider.clearColumns();
+
             this.state.forEach((c: any) => {
                 this.provider.pushDesc(c);
             });
