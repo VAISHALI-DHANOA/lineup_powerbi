@@ -152,28 +152,27 @@ export class Visual implements IVisual {
 
         // Check for move event
         this.ranking.on(Ranking.EVENT_GROUPS_CHANGED, (previous: number[], current: number[], previousGroups: IOrderedGroup[], currentGroups: IOrderedGroup[]) => {
-            if (this.hasGroupCriteriaChanged && currentGroups.length > 1) {
+
+            if (this.hasGroupCriteriaChanged && this.ranking.getGroups().length > 1) {
 
                 this.groupInfo = { groups: this.ranking.getGroups(), colName: "Total Downtime Minutes SPLY" };
                 this.hasGroupCriteriaChanged = false;
 
-                this.groups.forEach((column) => {
-                    const col = this.ranking.children.find((d) => d.desc.label == "Total Downtime Minutes SPLY");
-                    if (col) {
-                        this.groups.push(col);
-                        return;
-                    }
-                    const findDesc = (c: any) => cols.find((d) => d.label === c || (<any>d).column === c);
 
-                    const desc = findDesc(column);
-
-                    if (desc && this.provider.push(this.ranking, desc)) {
-                        return;
-                    }
-                });
-                if (this.groups.length > 0) {
-                    this.ranking.setGroupCriteria(this.groups);
+                const col: Column = this.ranking.children.find((d) => d.desc.label == "Total Downtime Minutes SPLY");
+                if (col) {
+                    this.groups.push(col);
+                    // return;
                 }
+                debugger;
+                const findDesc = (c: any) => cols.find((d) => d.label === c || (<any>d).column === c);
+
+
+                const desc = col.desc;
+
+                // if (desc && this.provider.push(this.ranking, desc)) {
+                //     return;
+                // }
             }
         });
 
@@ -206,6 +205,10 @@ export class Visual implements IVisual {
                         (<NumberColumn>c).setFilter(this.filterInfo.filter);
                     }
                 });
+            }
+
+            if (this.groups.length > 0) {
+                this.ranking.setGroupCriteria(this.groups);
             }
 
             // if (this.groups.length > 1) {
