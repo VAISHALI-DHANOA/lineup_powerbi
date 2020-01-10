@@ -45,6 +45,7 @@ import { LocalDataProvider, Ranking, Column, IColumnDesc, ISortCriteria, INumber
 import { LineUp } from 'lineupjs';
 import { IOrderedGroup } from "lineupjs/src/model/Group";
 import { isNumberColumn } from 'lineupjs/src/model/INumberColumn';
+import { thresholdScott } from "d3";
 
 // console.log("Initial log visual");
 export class Visual implements IVisual {
@@ -59,7 +60,6 @@ export class Visual implements IVisual {
     private state: Array<any>;
     private hasDataChanged: boolean;
     private sortCriteria: ISortCriteria[];
-    private groupInfo: { groups: IOrderedGroup[], colName: any };
     private groups: Column[] = [];
     private filterInfo: { filter: INumberFilter, colName: any };
     private hasGroupCriteriaChanged: boolean;
@@ -81,6 +81,7 @@ export class Visual implements IVisual {
     // Label based matching due to lack of unique identifier
     update(options: VisualUpdateOptions) {
 
+        let removedColumns: any[] = [];
         const oldSettings = this.settings;
         this.settings = Visual.parseSettings(options && options.dataViews && options.dataViews[0]);
 
@@ -108,8 +109,10 @@ export class Visual implements IVisual {
                 this.state.push(cols[cols.length - 1]);
 
             } else {
-                this.removeColumnPBI(cols);
+                removedColumns = this.removeColumnPBI(cols);
             }
+
+            console.log(this.state);
 
             this.provider.clearColumns();
             this.state.forEach((c: any) => {
@@ -134,6 +137,26 @@ export class Visual implements IVisual {
             this.ranking = this.lineup.data.getLastRanking();
             this.handleEventListeners(rows, cols);
         }
+
+        if (this.groups.length > 0) {
+            let indexToBeRemoved = -1;
+
+            this.groups.forEach((g: any) => {
+                removedColumns.forEach((c: any) => {
+                    if (c.label == g.label) {
+                        indexToBeRemoved = this.groups.indexOf(g);
+                    }
+                });
+            });
+
+            if (indexToBeRemoved >= 0) {
+                this.groups.splice(indexToBeRemoved, 1);
+            }
+
+            if (this.groups.length > 0) {
+                this.ranking.setGroupCriteria(this.groups);
+            }
+        }
     }
 
     private handleEventListeners(rows: any[], cols: any[]) {
@@ -150,34 +173,31 @@ export class Visual implements IVisual {
             this.sortCriteria = this.ranking.getSortCriteria();
         });
 
-        // Check for move event
+        //Handled already within group criteria
         this.ranking.on(Ranking.EVENT_GROUPS_CHANGED, (previous: number[], current: number[], previousGroups: IOrderedGroup[], currentGroups: IOrderedGroup[]) => {
-
-            if (this.hasGroupCriteriaChanged && this.ranking.getGroups().length > 1) {
-
-                this.groupInfo = { groups: this.ranking.getGroups(), colName: "Total Downtime Minutes SPLY" };
-                this.hasGroupCriteriaChanged = false;
-
-
-                const col: Column = this.ranking.children.find((d) => d.desc.label == "Total Downtime Minutes SPLY");
-                if (col) {
-                    this.groups.push(col);
-                    // return;
-                }
-                debugger;
-                const findDesc = (c: any) => cols.find((d) => d.label === c || (<any>d).column === c);
-
-
-                const desc = col.desc;
-
-                // if (desc && this.provider.push(this.ranking, desc)) {
-                //     return;
-                // }
-            }
         });
 
         this.ranking.on(Ranking.EVENT_GROUP_CRITERIA_CHANGED, (previous: Column[], current: Column[]) => {
-            this.hasGroupCriteriaChanged = true;
+            let groupedColumn: Column;
+
+            if (this.groups.length > 0) {
+                this.groups.forEach((g: Column) => {
+                    current.forEach((c: Column) => {
+                        groupedColumn = c;
+                        if (g.label == c.label) {
+                            groupedColumn = null;
+                            return;
+                        }
+                    })
+                    if (groupedColumn) {
+                        this.groups.push(groupedColumn);
+                    }
+                })
+            } else {
+                current.forEach((c: Column) => {
+                    this.groups.push(c);
+                });
+            }
         });
 
         this.ranking.on(Ranking.EVENT_GROUP_SORT_CRITERIA_CHANGED, (previous: ISortCriteria[], current: ISortCriteria[]) => {
@@ -206,37 +226,12 @@ export class Visual implements IVisual {
                     }
                 });
             }
-
-            if (this.groups.length > 0) {
-                this.ranking.setGroupCriteria(this.groups);
-            }
-
-            // if (this.groups.length > 1) {
-            //     debugger;
-            //     this.ranking.setGroups(this.groups);
-            //     this.ranking.groupBy(this.ranking.children[4]);
-            //     console.log(this.ranking);
-
-
-            //     for (let i = 3; i < this.ranking.children.length; i++) {
-            //         console.log("Ranking --> ", this.ranking.children[i].desc);
-            //         for (let j = 0; j < this.state.length; j++) {
-            //             if (this.state[j].label == this.ranking.children[i].label) {
-            //                 this.state[j] = this.ranking.children[i].desc;
-            //                 console.log("State -->", this.state[j]);
-            //             }
-            //         }
-            //     }
-            // }
         }
-
-        // NOT NEEDED
-        // this.ranking.on(Ranking.EVENT_ORDER_CHANGED, (previous: number[], current: number[], previousGroups: IOrderedGroup[], currentGroups: IOrderedGroup[]) => {
-        //     console.log("Order change registered");
-        // });
     }
 
     private removeColumnPBI(cols: any[]) {
+
+        let removedColumns: any[] = [];
 
         this.state.forEach((s: any) => {
             s.column = -1;
@@ -248,6 +243,7 @@ export class Visual implements IVisual {
         });
 
         let indexToBeRemoved = -1;
+        debugger;
 
         for (let i = 0; i < this.state.length; i++) {
             if (this.state[i].column == -1) {
@@ -256,9 +252,10 @@ export class Visual implements IVisual {
             }
         }
 
-        if (indexToBeRemoved) {
-            this.state.splice(indexToBeRemoved, 1);
+        if (indexToBeRemoved >= 0) {
+            removedColumns = this.state.splice(indexToBeRemoved, 1);
         }
+        return removedColumns;
     }
 
     private getOldData() {
