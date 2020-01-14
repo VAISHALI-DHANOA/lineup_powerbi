@@ -44,8 +44,6 @@ import { LineUpVisualSettings } from "./settings";
 import { LocalDataProvider, Ranking, Column, IColumnDesc, ISortCriteria, INumberFilter, NumberColumn } from 'lineupjs';
 import { LineUp } from 'lineupjs';
 import { IOrderedGroup } from "lineupjs/src/model/Group";
-import { isNumberColumn } from 'lineupjs/src/model/INumberColumn';
-import { thresholdScott, csvParse } from "d3";
 
 // console.log("Initial log visual");
 export class Visual implements IVisual {
@@ -62,7 +60,7 @@ export class Visual implements IVisual {
     private sortCriteria: ISortCriteria[];
     private groupCriteria: Column[] = [];
     private groupSortCriteria: ISortCriteria[] = [];
-    private filterInfo: { filter: INumberFilter, colName: any };
+    private filterInfo: { filter: INumberFilter, colName: any }[];
 
     constructor(options: VisualConstructorOptions) {
 
@@ -73,6 +71,7 @@ export class Visual implements IVisual {
         this.settings = new LineUpVisualSettings();
         this.hasDataChanged = false;
         this.sortCriteria = new Array<ISortCriteria>();
+        this.filterInfo = new Array<any>();
     }
 
 
@@ -237,7 +236,7 @@ export class Visual implements IVisual {
 
             this.ranking.children.forEach((c: Column) => {
                 if (c.isFiltered()) {
-                    this.filterInfo = { filter: current, colName: c.label };
+                    this.filterInfo.push({ filter: current, colName: c.label });
                 }
             });
         })
@@ -249,11 +248,13 @@ export class Visual implements IVisual {
             this.ranking.setSortCriteria(this.sortCriteria);
             this.provider.sort(this.ranking);
 
-            if (this.filterInfo) {
+            if (this.filterInfo.length > 0) {
                 this.ranking.children.forEach((c: Column) => {
-                    if (c.desc.type == "number" && c.label == this.filterInfo.colName) {
-                        (<NumberColumn>c).setFilter(this.filterInfo.filter);
-                    }
+                    this.filterInfo.forEach((f: any) => {
+                        if (c.desc.type == "number" && c.label == f.colName) {
+                            (<NumberColumn>c).setFilter(f.filter);
+                        }
+                    })
                 });
             }
         }
