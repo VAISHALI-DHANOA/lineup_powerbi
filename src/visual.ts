@@ -164,6 +164,34 @@ export class Visual implements IVisual {
                 this.ranking.setGroupSortCriteria(this.groupSortCriteria);
             }
         }
+
+
+
+        if (this.filterInfo.length > 0) {
+            debugger;
+            let indexToBeRemoved = -1;
+            removedColumns.forEach((c: Column) => {
+                for (let i = 0; i < this.filterInfo.length; i++) {
+                    if (this.filterInfo[i].colName == c.label) {
+                        indexToBeRemoved = i;
+                    }
+                }
+            });
+
+            if (indexToBeRemoved >= 0) {
+                this.filterInfo.splice(indexToBeRemoved, 1);
+            }
+
+            if (this.filterInfo.length > 0) {
+                this.ranking.children.forEach((c: Column) => {
+                    this.filterInfo.forEach((f: any) => {
+                        if (c.desc.type == "number" && c.label == f.colName) {
+                            (<NumberColumn>c).setFilter(f.filter);
+                        }
+                    })
+                });
+            }
+        }
     }
 
     private handleEventListeners(rows: any[], cols: any[]) {
